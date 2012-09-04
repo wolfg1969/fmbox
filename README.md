@@ -1,4 +1,4 @@
 fmbox
 =====
 
-play douban fm on a wr703n (with openwork)
+Playing Douban FM on a TP-LINK WR703N Router (OpenWrt hacked)
