@@ -1,0 +1,22 @@
+config wifi-device  radio0
+	option type     mac80211
+	option channel  auto
+	option macaddr	ec:17:2f:94:bd:b4
+	option hwmode	11ng
+	option htmode	HT20
+	list ht_capab	SHORT-GI-20
+	list ht_capab	SHORT-GI-40
+	list ht_capab	RX-STBC1
+	list ht_capab	DSSS_CCK-40
+	# REMOVE THIS LINE TO ENABLE WIFI:
+#	option disabled 1
+
+config wifi-iface
+	option device   radio0
+	option network  wan
+	option mode     sta
+	option ssid     your-ssid
+	option encryption psk2+aes
+	option key your-secret-key
+
+
