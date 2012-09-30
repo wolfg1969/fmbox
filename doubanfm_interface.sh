@@ -34,11 +34,16 @@ stty 9600 -echo < /dev/ttyATH0	# set serial port to 9600 baud
 
 oldchannel=-1	# var to keep track of what station we're playing
 
+echo "Douban FM interface start!\n" > /dev/ttyATH0
+
+# launch LCD display routines in the background
+/root/display.sh &
+
+
 while true	# loop forever
 do
    inputline="" # clear input
   
-   # Loop until we get a valid tuner position from the AVR 
    until inputline=$(echo $inputline | grep -e "^tuner: ")
    do
       inputline=$(head -n 1 < /dev/ttyATH0)
@@ -49,7 +54,6 @@ do
    # compute channel id based on tuner value
    # the tuner range is 0 to MAXADC
    channel_id=$(expr $value / $ADCBIN)
-   #channel=$(echo $CHANNELS | awk -v i=$channel_index '{split($0, array, " "); print array[i] }')
    #echo "$channel"
 
    # if channel has changed, we need to tell fmd to change the channel
