@@ -34,7 +34,7 @@ stty 9600 -echo < /dev/ttyATH0	# set serial port to 9600 baud
 
 oldchannel=-1	# var to keep track of what station we're playing
 
-echo "Douban FM interface start!\n" > /dev/ttyATH0
+echo "start" > /dev/ttyATH0
 
 # launch LCD display routines in the background
 /root/display.sh &
