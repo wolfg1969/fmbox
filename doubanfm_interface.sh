@@ -5,7 +5,7 @@
 #
 
 # Some configuration settings
-VOLUME=6
+VOLUME=8
 if [ ! -f /tmp/fm_channels ]; then
 	echo "fm_channels file not found"
 	exit 1
@@ -16,11 +16,11 @@ CHANNELS_COUNT=11
 MAXADC=1024
 
 #echo $CHANNELS
-echo $CHANNELS_COUNT
+#echo $CHANNELS_COUNT
 
 
 ADCBIN=$(expr "(" $MAXADC / $CHANNELS_COUNT ")" + 1)
-echo $ADCBIN
+#echo $ADCBIN
 
 trap 'kill $! ; exit 1' SIGINT	# exit on ctrl-c, useful for debugging
 				# kills the display.sh process before exiting
@@ -31,10 +31,11 @@ stty 9600 -echo < /dev/ttyATH0	# set serial port to 9600 baud
 				# completely separate from each other
 # fmd setup
 # fmd -a localhost -p 10098 chvol $VOLUME
+volumecontrol Speaker $VOLUME
 
 oldchannel=-1	# var to keep track of what station we're playing
 
-echo "start" > /dev/ttyATH0
+echo "fmbox init^" > /dev/ttyATH0
 
 # launch LCD display routines in the background
 /root/display.sh &
@@ -47,6 +48,7 @@ do
    until inputline=$(echo $inputline | grep -e "^tuner: ")
    do
       inputline=$(head -n 1 < /dev/ttyATH0)
+      #echo $inputline
    done
    value=$(echo $inputline | sed 's/tuner: //')	# strip out the tuner: part
    #echo $value
@@ -54,13 +56,13 @@ do
    # compute channel id based on tuner value
    # the tuner range is 0 to MAXADC
    channel_id=$(expr $value / $ADCBIN)
-   #echo "$channel"
+   #echo "channel=$channel_id"
 
    # if channel has changed, we need to tell fmd to change the channel
    if [ "$channel_id" -ne "$oldchannel" ]
    then
-   	echo "Tuner Position: " $value
-   	echo "New channel..." $channel_id
+   	#echo "Tuner Position: " $value
+   	#echo "New channel..." $channel_id
    	fmc -a localhost -p 10098 setch $channel_id
    fi
     
