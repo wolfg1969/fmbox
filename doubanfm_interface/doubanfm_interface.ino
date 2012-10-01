@@ -19,9 +19,16 @@ char inData[MAXSIZE];
 String msg;
 
 boolean fmStart = false;
+int channelValue = 0;
 
 void messageCompleted() {
+  
+  //Serial.print("tunner: ");
+  
+  //Serial.print(channelValue);
+  
   while (message.available()) {
+    
     if (message.checkString("fmbox init")) {
       fmStart = true;
       lcd.clear();
@@ -53,26 +60,26 @@ void setup() {
   // initialize serial:
   Serial.begin(9600);
   
-  message.attach(messageCompleted);
-  
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
   
   lcd.setCursor(0,0);
-  lcd.print("Douban FMbox");
+  lcd.print("Douban fm box");
   lcd.setCursor(0,1);
   lcd.print("by wolfg");  
+  
+  message.attach(messageCompleted);
 }
 
-void loop() {
+void loop() {  
+  // read the input on analog pin 0:
+  channelValue = analogRead(A0);
   
-  while (Serial.available()) {
-    message.process(Serial.read()); 
+  while (Serial.available()) {    
+    message.process(Serial.read());     
   }
   
-  // read the input on analog pin 0:
-  //int channelValue = analogRead(A0);
-  //Serial.println("tunner: " + channelValue);
-  //delay(500); 
-  
+  //Serial.print("tunner: ");
+  //Serial.println(channelValue);
+  //delay(1);
 }
