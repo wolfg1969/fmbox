@@ -13,10 +13,10 @@ do
     	echo "fmbox clr" > /dev/ttyATH0
     	old_name=$name
     	title=$(echo $info | awk -F- '{print $2;}' | sed 's/^ *//; s/; */;/g')
-    	echo "fmbox singer name^$name" > /dev/ttyATH0
     	echo "fmbox song name^$title" > /dev/ttyATH0
-    	#echo "fmbox singer^$name" >> /tmp/display.log
+    	echo "fmbox singer name^$name" > /dev/ttyATH0
     	#echo "fmbox song name^$title" >> /tmp/display.log
+    	#echo "fmbox singer^$name" >> /tmp/display.log
     fi
 
     sleep 1

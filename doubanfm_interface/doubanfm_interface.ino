@@ -15,12 +15,12 @@ Messenger message = Messenger('^');
 
 // Define the max size of the string
 // The size must be big enough to hold the longest string you are expecting
-#define MAXSIZE 17 
+#define MAXSIZE 128 
 
 // Create a char array (string) to hold the received string
 char inData[MAXSIZE];
 
-boolean fmStart = false;
+//boolean fmStart = false;
 
 long previousMillis = 0;
 long interval = 3000;
@@ -32,7 +32,7 @@ void setup() {
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
   
-  lcd.setCursor(0,0);
+  //lcd.setCursor(0,0);
   lcd.print("Douban fm box");
   lcd.setCursor(0,1);
   lcd.print("by wolfg");  
@@ -64,11 +64,11 @@ void messageCompleted() {
   while (message.available()) {
     
     if (message.checkString("fmbox init")) {
-      fmStart = true;
+      //fmStart = true;
       lcd.clear();
       lcd.print("fmbox init");
     } else {
-      if (fmStart) {
+      //if (fmStart) {
         if (message.checkString("fmbox singer name")) { 
           //lcd.clear();        
           lcd.setCursor(0,1);
@@ -81,7 +81,7 @@ void messageCompleted() {
         } else if (message.checkString("fmbox clr")) {
             lcd.clear();
         }
-      }
+      //}
     }
   }  
 }
