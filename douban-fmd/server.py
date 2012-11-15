@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import signal
 import socket
 import sys
 import thread
@@ -113,6 +114,8 @@ if __name__ == "__main__":
         config.get("DoubanFM", "token"),
         long(config.get("DoubanFM", "expire"))
     )
+    
+    signal.signal(signal.SIGUSR1, player.playNextSong)
 
     HOST, PORT = "localhost", 8888
 

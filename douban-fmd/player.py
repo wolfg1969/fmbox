@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import multiprocessing
+import os
 import signal
 import subprocess
 
@@ -30,8 +31,8 @@ class Player:
 
         self.status = PlayerStatus.INIT
         
-        #proc = multiprocessing.Process(target=self.__checkSongIsEnd, args=())
-        #proc.start()
+        self.pid = os.getpid()
+        print "main process pid is", self.pid
 
 
     def __login(self):
@@ -40,21 +41,25 @@ class Player:
         
     def __mpg321_proc(self, song_url, output):
     
-        mpg321_proc = subprocess.Popen(['mpg123', '-q', song_url.replace('\\', '')])
+        mpg321_proc = subprocess.Popen(['mpg321', '-q', song_url.replace('\\', '')])
         
         output.put(mpg321_proc)
         
         print "mpg321 pid is", mpg321_proc.pid
-        print "will block here"
+        #print "will block here"
         
         mpg321_proc.wait() 
         
         print "mpg321 stopped" 
+        print "main process pid is", self.pid
+        
+        
+        #os.kill(self.play_proc.pid, signal.SIGKILL)
         
         if mpg321_proc.returncode >= 0: # not kill
-            self.__get_next_song()
-            self.__play() 
-        
+            #self.__get_next_song()
+            #self.__play()
+            os.kill(self.pid, signal.SIGUSR1)        
           
     
     def __playInAnotherProc(self, song_url):        
@@ -70,11 +75,19 @@ class Player:
         
         queue.close()
         
-        play_proc.terminate()
+        return mpg321_proc, play_proc
         
-        return mpg321_proc, None
-        
-        
+    
+    
+    def __killPlayProc(self):
+    
+        if self.play_proc:
+            print "current play_proc pid is", self.play_proc.pid
+            self.play_proc.terminate()
+            print "current play_proc pid terminated"
+        else:
+            print "self.play_proc is None" 
+                
 
     def __play(self):
     
@@ -136,7 +149,12 @@ class Player:
             self.current_song_index = 0
         else:
             self.current_song_index = self.current_song_index + 1       
-        
+    
+    def playNextSong(self, signum, frame):
+    
+        self.__get_next_song()
+        self.__play()  
+           
 
     def play(self):
         print "play"
