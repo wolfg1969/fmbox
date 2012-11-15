@@ -29,9 +29,6 @@ class Player:
         self.play_proc = None
 
         self.status = PlayerStatus.INIT
-        
-        #proc = multiprocessing.Process(target=self.__checkSongIsEnd, args=())
-        #proc.start()
 
 
     def __login(self):
@@ -51,10 +48,23 @@ class Player:
         
         print "mpg321 stopped"        
         
+        self.__killPlayProc()
+        
         if mpg321_proc.returncode >= 0:
             self.__get_next_song()
             self.__play() 
         
+        
+        
+    
+    def __killPlayProc(self):
+    
+        if self.play_proc:
+            print "current play_proc pid is", self.play_proc.pid
+            self.play_proc.terminate()
+            print "current play_proc pid terminated"
+        else:
+            print "self.play_proc is None"    
           
     
     def __playInAnotherProc(self, song_url):        
@@ -75,14 +85,6 @@ class Player:
         
 
     def __play(self):
-    
-        if self.play_proc:
-            print "current play_proc pid is", self.play_proc.pid
-            self.play_proc.terminate()
-            print "current play_proc pid terminated"
-        else:
-            print "self.play_proc is None"
-            
         
     
         if self.current_song_index in range(len(self.play_list)):
@@ -97,8 +99,9 @@ class Player:
             
     def __stop(self):
         
-        print "current mpg321 pid is", self.mpg321_proc.pid
-        self.mpg321_proc.send_signal(signal.SIGKILL)
+        if self.mpg321_proc:
+            print "current mpg321 pid is", self.mpg321_proc.pid
+            self.mpg321_proc.send_signal(signal.SIGKILL)
                     
         print "stop at index:", self.current_song_index        
         
@@ -234,8 +237,10 @@ class Player:
         del self.play_list[:]
 
         if self.status != PlayerStatus.STOP:
+            print "stop first"
             self.stop()
-
+        
+        self.__get_next_song()
         self.play()
         
 
