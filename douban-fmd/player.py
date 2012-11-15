@@ -51,11 +51,7 @@ class Player:
         
         print "mpg321 stopped" 
         
-<<<<<<< HEAD
         if mpg321_proc.returncode >= 0: # not kill
-=======
-        if mpg321_proc.returncode >= 0:
->>>>>>> parent of d58fabc... play proc
             self.__get_next_song()
             self.__play() 
         
