@@ -37,7 +37,7 @@ class Player:
         
     def __mpg321_proc(self, song_url, output):
     
-        mpg321_proc = subprocess.Popen(['mpg321', '-q', song_url.replace('\\', '')])
+        mpg321_proc = subprocess.Popen(['mpg123', '-q', song_url.replace('\\', '')])
         
         output.put(mpg321_proc)
         
@@ -46,11 +46,9 @@ class Player:
         
         mpg321_proc.wait() 
         
-        print "mpg321 stopped"        
+        print "mpg321 stopped" 
         
-        self.__killPlayProc()
-        
-        if mpg321_proc.returncode >= 0:
+        if mpg321_proc.returncode >= 0: # not kill
             self.__get_next_song()
             self.__play() 
         
@@ -69,7 +67,7 @@ class Player:
     
     def __playInAnotherProc(self, song_url):        
         
-        #print "play %s in another proc" % song_url
+        print "play %s in another proc" % song_url
         
         queue = multiprocessing.Queue()
         
@@ -80,13 +78,16 @@ class Player:
         
         queue.close()
         
-        return mpg321_proc, play_proc
+        play_proc.terminate()
+        
+        return mpg321_proc, None
         
         
 
     def __play(self):
         
-    
+        #self.__killPlayProc()
+        
         if self.current_song_index in range(len(self.play_list)):
 
             song_url = self.play_list[self.current_song_index]['url']
@@ -174,9 +175,9 @@ class Player:
         print "toggle"
 
         if self.status == PlayerStatus.PLAY:
-            self.__pause()
+            self.pause()
         else:
-            self.__play()
+            self.play()
             
 
     def skip(self):
