@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import socket
 import sys
 import thread
@@ -48,8 +50,8 @@ class CmdHandler(SocketServer.StreamRequestHandler):
             player.rate()
         elif cmd == "unrate":
             player.unrate()
-        elif cmd == "info":
-            player.info()
+        elif cmd == "info":   
+            self.request.sendall(player.info().encode('utf-8'))
         elif cmd == "setch":
             if arg:
                 player.setch(int(arg))

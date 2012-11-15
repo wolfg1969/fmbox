@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import multiprocessing
 import signal
 import subprocess
 
 from api import RadioAPI, ReportType
+
 
 class PlayerStatus:
     PLAY = 1
@@ -23,64 +25,127 @@ class Player:
         self.current_song_index = -1
 
         self.mpg321_proc = None
+        self.play_proc = None
 
         self.status = PlayerStatus.STOP
-
+        
+        #proc = multiprocessing.Process(target=self.__checkSongIsEnd, args=())
+        #proc.start()
 
 
     def __login(self):
         pass
-
+        
+        
+    def __mpg321_proc(self, song_url, output):
+    
+        mpg321_proc = subprocess.Popen(['mpg321', '-q', song_url.replace('\\', '')])
+        
+        output.put(mpg321_proc)
+        
+        print "mpg321 pid is", mpg321_proc.pid
+        print "will block here"
+        
+        mpg321_proc.wait() 
+        
+        print "mpg321 stopped"        
+        
+        if mpg321_proc.returncode >= 0:
+            self.__play() 
+        
+          
+    
+    def __playInAnotherProc(self, song_url):        
+        
+        #print "play %s in another proc" % song_url
+        
+        queue = multiprocessing.Queue()
+        
+        play_proc = multiprocessing.Process(target=self.__mpg321_proc, args=(song_url, queue))
+        play_proc.start()
+        
+        mpg321_proc = queue.get()
+        
+        queue.close()
+        
+        return mpg321_proc, play_proc
+        
+        
 
     def __play(self):
-
+    
+        if self.play_proc:
+            print "current play_proc pid is", self.play_proc.pid
+            self.play_proc.terminate()
+            print "current play_proc pid terminated"
+        else:
+            print "self.play_proc is None"
+    
         if self.current_song_index in range(len(self.play_list)):
 
             song_url = self.play_list[self.current_song_index]['url']
+            
+            self.mpg321_proc, self.play_proc = self.__playInAnotherProc(song_url)
+            
+            print "new mpg321_proc.pid =", self.mpg321_proc.pid
+            print "new play_proc is", self.play_proc
+            
+            
+    def __stop(self):
+        
+        print "current mpg321 pid is", self.mpg321_proc.pid
+        self.mpg321_proc.send_signal(signal.SIGKILL)
+                    
+        print "stop at index:", self.current_song_index
+        
+        self.current_song_index = self.current_song_index - 1 
+        
+        if self.current_song_index < 0:
+            self.current_song_index = -2
+        
+        
+    def __pause(self):
+    
+        print "current mpg321 pid is", self.mpg321_proc.pid
+        self.mpg321_proc.send_signal(signal.SIGSTOP)        
+            
+    
+    def __get_next_song(self):
+    
+        if self.current_song_index == -2:
+        
+            self.current_song_index = 0
+                
+        elif self.current_song_index == -1:
 
-            self.mpg321_proc = subprocess.Popen(['mpg321', '-q', song_url.replace('\\', '')])
+            self.play_list = self.radioAPI.sendLongReport(
+                self.channel,
+                0,
+                ReportType.NEW,
+                self.play_history
+            )
+            self.current_song_index = 0
 
-            #streamdata = self.mpg321_proc.communicate()[0]
-            #rc = self.mpg321_proc.returncode
-            #print rc
+        elif self.current_song_index >= len(self.play_list):
 
-            #self.__opCurrentSong(ReportType.END)
-
-            #self.current_song_index = self.current_song_index + 1
-
-            #self.stop()
-            #self.play()
-
-
+            self.play_list = self.radioAPI.sendLongReport(
+                self.channel,
+                self.play_list[-2:-1][0]['sid'],
+                ReportType.PLAY,
+                self.play_history
+            )
+            self.current_song_index = 0
+        else:
+            self.current_song_index = self.current_song_index + 1       
+        
 
     def play(self):
         print "play"
 
         if self.status == PlayerStatus.STOP:
-
-            if self.current_song_index == -1:
-
-                self.play_list = self.radioAPI.sendLongReport(
-                    self.channel,
-                    0,
-                    ReportType.NEW,
-                    self.play_history
-                )
-                self.current_song_index = 0
-
-            elif self.current_song_index >= len(self.play_list):
-
-                self.play_list = self.radioAPI.sendLongReport(
-                    self.channel,
-                    self.play_list[-2:-1][0]['sid'],
-                    ReportType.PLAY,
-                    self.play_history
-                )
-                self.current_song_index = 0
-
+        
+            self.__get_next_song()
             self.__play()
-
-
 
         elif self.status == PlayerStatus.PAUSE:
             self.mpg321_proc.send_signal(signal.SIGCONT)
@@ -90,34 +155,31 @@ class Player:
     def stop(self):
         print "stop"
 
-        if self.status != PlayerStatus.STOP:
+        if self.status != PlayerStatus.STOP:            
 
+            self.__stop()
             self.status = PlayerStatus.STOP
-
-            self.mpg321_proc.send_signal(signal.SIGHUP)
 
 
     def pause(self):
         print "pause"
-
+        self.__pause()
         self.status = PlayerStatus.PAUSE
-        self.mpg321_proc.send_signal(signal.SIGSTOP)
+        
 
     def toggle(self):
         print "toggle"
 
         if self.status == PlayerStatus.PLAY:
-            self.pause()
+            self.__pause()
         else:
-            self.play()
+            self.__play()
+            
 
     def skip(self):
         print "skip"
 
         self.__opCurrentSong(ReportType.SKIP)
-
-
-        self.current_song_index = self.current_song_index + 1
 
         self.stop()
         self.play()
@@ -126,8 +188,6 @@ class Player:
 
     def ban(self):
         print "ban"
-
-        self.current_song_index = self.current_song_index + 1
 
         self.__opCurrentSong(ReportType.BAN)
 
@@ -151,7 +211,17 @@ class Player:
     def info(self):
         print "info"
         if self.current_song_index in range(len(self.play_list)):
-            print self.play_list[current_song_index]
+                        
+            song = self.play_list[self.current_song_index]
+                        
+            return u"Album: %s\nTitle: %s\nArtist: %s\nLike:%s\n" % (
+                song['albumtitle'],
+                song['title'],
+                song['artist'],
+                song['like'],
+            )
+        
+        return ""    
 
     def setch(self, ch):
         print "setch"
@@ -165,6 +235,7 @@ class Player:
             self.stop()
 
         self.play()
+        
 
     def __maintarinPlayHistory(self, songId, op):
 
@@ -175,6 +246,7 @@ class Player:
 
         if len(self.play_history) > 20:
             del self.play_history[0]
+            
 
     def __opCurrentSong(self, op):
 
@@ -190,7 +262,15 @@ class Player:
 
             if op in [ReportType.END, ReportType.SKIP, ReportType.BAN]:
                 self.__maintarinPlayHistory(songId, op)
-
+                
+            if op in [ReportType.RATE, ReportType.UNRATE]:
+                if op == ReportType.RATE:
+                    
+                    self.play_list[self.current_song_index]['like'] = '1'
+                    
+                else:
+                
+                    self.play_list[self.current_song_index]['like'] = '0' 
 
 
 

@@ -33,7 +33,7 @@ class RadioAPI:
         self.curl = pycurl.Curl()
         self.curl.setopt(pycurl.USERAGENT,
             'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20100101 Firefox/8.0')
-
+        self.curl.setopt(pycurl.ENCODING, "utf-8")
         self.curl.setopt(pycurl.CONNECTTIMEOUT, 5)
         self.curl.setopt(pycurl.TIMEOUT, 5)
         #self.curl.setopt(pycurl.VERBOSE, True)
@@ -60,8 +60,10 @@ class RadioAPI:
         self.curl.setopt(pycurl.WRITEFUNCTION, buf.write)
         self.curl.perform()
 
-        json_obj = cjson.decode(buf.getvalue())
-        print json_obj
+        json_obj = cjson.decode(buf.getvalue().decode('utf8'))
+        #print json_obj
+        
+        print 'sendLongReport.ret =', json_obj['r']
 
         buf.close()
 
@@ -91,7 +93,7 @@ class RadioAPI:
         self.curl.setopt(pycurl.WRITEFUNCTION, buf.write)
         self.curl.perform()
 
-        print 'ret =', cjson.decode(buf.getvalue())['r']
+        print 'sendShortReport.ret =', cjson.decode(buf.getvalue())['r']
         buf.close()
 
     def __populateHistory(self, hisList):
@@ -121,6 +123,6 @@ if __name__ == "__main__":
 
     songList = api.sendLongReport(1, 1433383, ReportType.RATE, [])
 
-    print songList[0]['url']
+    print songList[0]['title']
 
 
