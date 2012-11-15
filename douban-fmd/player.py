@@ -8,6 +8,7 @@ from api import RadioAPI, ReportType
 
 
 class PlayerStatus:
+    INIT = 0
     PLAY = 1
     PAUSE = 2
     STOP = 3
@@ -27,7 +28,7 @@ class Player:
         self.mpg321_proc = None
         self.play_proc = None
 
-        self.status = PlayerStatus.STOP
+        self.status = PlayerStatus.INIT
         
         #proc = multiprocessing.Process(target=self.__checkSongIsEnd, args=())
         #proc.start()
@@ -51,6 +52,7 @@ class Player:
         print "mpg321 stopped"        
         
         if mpg321_proc.returncode >= 0:
+            self.__get_next_song()
             self.__play() 
         
           
@@ -80,6 +82,8 @@ class Player:
             print "current play_proc pid terminated"
         else:
             print "self.play_proc is None"
+            
+        
     
         if self.current_song_index in range(len(self.play_list)):
 
@@ -96,12 +100,8 @@ class Player:
         print "current mpg321 pid is", self.mpg321_proc.pid
         self.mpg321_proc.send_signal(signal.SIGKILL)
                     
-        print "stop at index:", self.current_song_index
+        print "stop at index:", self.current_song_index        
         
-        self.current_song_index = self.current_song_index - 1 
-        
-        if self.current_song_index < 0:
-            self.current_song_index = -2
         
         
     def __pause(self):
@@ -112,11 +112,7 @@ class Player:
     
     def __get_next_song(self):
     
-        if self.current_song_index == -2:
-        
-            self.current_song_index = 0
-                
-        elif self.current_song_index == -1:
+        if self.current_song_index == -1:
 
             self.play_list = self.radioAPI.sendLongReport(
                 self.channel,
@@ -142,9 +138,13 @@ class Player:
     def play(self):
         print "play"
 
-        if self.status == PlayerStatus.STOP:
+        if self.status == PlayerStatus.INIT:
         
             self.__get_next_song()
+            self.__play()
+            
+        elif self.status == PlayerStatus.STOP:        
+            
             self.__play()
 
         elif self.status == PlayerStatus.PAUSE:
@@ -181,8 +181,9 @@ class Player:
 
         self.__opCurrentSong(ReportType.SKIP)
 
-        self.stop()
-        self.play()
+        self.__stop()
+        self.__get_next_song()
+        self.__play()
 
 
 
@@ -191,8 +192,9 @@ class Player:
 
         self.__opCurrentSong(ReportType.BAN)
 
-        self.stop()
-        self.play()
+        self.__stop()
+        self.__get_next_song()
+        self.__play()
 
 
     def rate(self):
@@ -237,7 +239,7 @@ class Player:
         self.play()
         
 
-    def __maintarinPlayHistory(self, songId, op):
+    def __maintainPlayHistory(self, songId, op):
 
         self.play_history.append({
                 'sid': songId,
@@ -261,7 +263,7 @@ class Player:
                 )
 
             if op in [ReportType.END, ReportType.SKIP, ReportType.BAN]:
-                self.__maintarinPlayHistory(songId, op)
+                self.__maintainPlayHistory(songId, op)
                 
             if op in [ReportType.RATE, ReportType.UNRATE]:
                 if op == ReportType.RATE:
