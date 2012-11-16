@@ -102,10 +102,10 @@ class RadioAPI:
         self.curl.perform()
 
         json_str = buf.getvalue().decode('utf8')
-        self.logger.debug("return json_str is %s" % json_str)        
-        self.logger.info("sendShortReport.ret=%s" % cjson.decode(json_str)['r'])
+        self.logger.debug("return json_str is %s" % json_str) 
         
         buf.close()
+        
 
     def __populateHistory(self, hisList):
 

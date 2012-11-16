@@ -58,6 +58,7 @@ class Player:
     
             mpg321_proc = subprocess.Popen(['mpg123', '-q', song_url.replace('\\', '')])
         
+            self.logger.debug("mpg321's pid is %d" % mpg321_proc.pid)     
             outputQueue.put(mpg321_proc.pid)
             
             self.logger.debug("will block here")
@@ -70,7 +71,9 @@ class Player:
                mpg321_proc.returncode != signal.SIGCONT : # not stop or pause
             
                 self.logger.info("play next song")
-                os.kill(main_pid, signal.SIGUSR1)     
+                self.logger.debug("pre send SIGUSR1 to %d" % main_pid)
+                os.kill(main_pid, signal.SIGUSR1) 
+                self.logger.debug("send SIGUSR1 to %d" % main_pid)    
     
     
     def __play(self):                  
@@ -102,7 +105,7 @@ class Player:
     
     def __get_next_song(self):
     
-        self.logger.debug("__get_next_song: current index = %d" % self.current_song_index)
+        self.logger.debug("playlist's len %d, current %d" % (len(self.play_list), self.current_song_index))
         
         if self.current_song_index == -1:
 
@@ -116,7 +119,7 @@ class Player:
             )
             self.current_song_index = 0
 
-        elif self.current_song_index >= len(self.play_list):
+        elif self.current_song_index >= len(self.play_list)-1:
 
             self.logger.debug("playlist end, request new")
             
@@ -132,11 +135,12 @@ class Player:
             self.logger.debug("playlist playing, no need to request")
             self.current_song_index = self.current_song_index + 1 
             
-        self.logger.debug("__get_next_song: new index = %d" % self.current_song_index)
+        self.logger.debug("playlist's len %d, next %d" % (len(self.play_list), self.current_song_index))
               
     
     def playNextSong(self, signum, frame):
     
+        self.__opCurrentSong(ReportType.END)
         self.__get_next_song()
         self.__play()  
            
