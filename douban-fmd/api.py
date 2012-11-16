@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import cjson
+import logging
 import pycurl
 import cStringIO
 
@@ -24,6 +25,8 @@ class ReportType:
 class RadioAPI:
 
     def __init__(self, uid, uname, token, expire):
+    
+        self.logger = logging.getLogger('douban-fmd.api')
 
         self.uid = uid
         self.uname = uname
@@ -55,15 +58,18 @@ class RadioAPI:
             reportType,
             self.__populateHistory(playHistory),
         )
+        
+        self.logger.debug("api request url is %s" % url)
 
         self.curl.setopt(pycurl.URL, url)
         self.curl.setopt(pycurl.WRITEFUNCTION, buf.write)
         self.curl.perform()
 
-        json_obj = cjson.decode(buf.getvalue().decode('utf8'))
-        #print json_obj
+        json_str = buf.getvalue().decode('utf8')
+        self.logger.debug("return json_str is %s" % json_str)
         
-        print 'sendLongReport.ret =', json_obj['r']
+        json_obj = cjson.decode(json_str)
+        self.logger.info("sendLongReport.ret=%s" % json_obj['r'])
 
         buf.close()
 
@@ -86,6 +92,8 @@ class RadioAPI:
             songId,
             reportType,
         )
+        
+        self.logger.debug("api request url is %s" % url)
 
         buf = cStringIO.StringIO()
 
@@ -93,7 +101,10 @@ class RadioAPI:
         self.curl.setopt(pycurl.WRITEFUNCTION, buf.write)
         self.curl.perform()
 
-        print 'sendShortReport.ret =', cjson.decode(buf.getvalue())['r']
+        json_str = buf.getvalue().decode('utf8')
+        self.logger.debug("return json_str is %s" % json_str)        
+        self.logger.info("sendShortReport.ret=%s" % cjson.decode(json_str)['r'])
+        
         buf.close()
 
     def __populateHistory(self, hisList):

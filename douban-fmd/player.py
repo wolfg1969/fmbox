@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import logging
 import multiprocessing
 import os
 import signal
@@ -17,6 +18,8 @@ class PlayerStatus:
 class Player:
 
     def __init__(self, uid, uname, token, expire):
+    
+        self.logger = logging.getLogger('douban-fmd.player')
 
         self.channel = 0
 
@@ -31,7 +34,7 @@ class Player:
         self.status = PlayerStatus.INIT
         
         self.pid = os.getpid()
-        print "main process pid is", self.pid
+        self.logger.debug("main process pid is %d" % self.pid)
         
         self.inputQueue = multiprocessing.Queue()
         self.outputQueue = multiprocessing.Queue()
@@ -57,15 +60,15 @@ class Player:
         
             outputQueue.put(mpg321_proc.pid)
             
-            print "will block here"
+            self.logger.debug("will block here")
         
             mpg321_proc.wait() 
         
-            print "mpg321 stopped: returncode =", mpg321_proc.returncode           
+            self.logger.debug("mpg321 stopped: returncode=%d" % mpg321_proc.returncode)            
         
             if mpg321_proc.returncode >= 0: # not kill
             
-                print "play next"  
+                self.logger.info("play next song")
                 os.kill(main_pid, signal.SIGUSR1)     
     
     
@@ -81,22 +84,25 @@ class Player:
             
     def __stop(self):
         
-        print "current mpg321 pid is", self.mpg321_pid
+        self.logger.debug("current mpg321 pid is %d" % self.mpg321_pid)
+        
         os.kill(self.mpg321_pid, signal.SIGKILL)
                     
-        print "stop at index:", self.current_song_index        
+        self.logger.debug("stop at index: %d" % self.current_song_index)        
         
         
         
     def __pause(self):
     
-        print "current mpg321 pid is", self.mpg321_pid
+        self.logger.debug("current mpg321 pid is %d" % self.mpg321_pid)
+        
         os.kill(self.mpg321_pid, signal.SIGSTOP)        
             
     
     def __get_next_song(self):
     
-        print "__get_next_song: current_song_index =", self.current_song_index
+        self.logger.debug("__get_next_song: current index = %d" % self.current_song_index)
+        
         if self.current_song_index == -1:
 
             self.play_list = self.radioAPI.sendLongReport(
@@ -119,7 +125,7 @@ class Player:
         else:
             self.current_song_index = self.current_song_index + 1 
             
-        print "__get_next_song: new index =", self.current_song_index
+        self.logger.debug("__get_next_song: new index = %d" % self.current_song_index)
               
     
     def playNextSong(self, signum, frame):
@@ -129,7 +135,7 @@ class Player:
            
 
     def play(self):
-        print "play"
+        self.logger.info("play")
 
         if self.status == PlayerStatus.INIT:
         
@@ -146,7 +152,7 @@ class Player:
         self.status = PlayerStatus.PLAY
 
     def stop(self):
-        print "stop"
+        self.logger.info("stop")
 
         if self.status != PlayerStatus.STOP:            
 
@@ -155,13 +161,14 @@ class Player:
 
 
     def pause(self):
-        print "pause"
+        self.logger.info("pause")
+        
         self.__pause()
         self.status = PlayerStatus.PAUSE
         
 
     def toggle(self):
-        print "toggle"
+        self.logger.info("toggle")
 
         if self.status == PlayerStatus.PLAY:
             self.pause()
@@ -170,7 +177,7 @@ class Player:
             
 
     def skip(self):
-        print "skip"
+        self.logger.info("skip")
 
         self.__opCurrentSong(ReportType.SKIP)
 
@@ -181,7 +188,7 @@ class Player:
 
 
     def ban(self):
-        print "ban"
+        self.logger.info("ban")
 
         self.__opCurrentSong(ReportType.BAN)
 
@@ -191,20 +198,21 @@ class Player:
 
 
     def rate(self):
-        print "rate"
+        self.logger.info("rate")
 
         self.__opCurrentSong(ReportType.RATE)
 
 
     def unrate(self):
-        print "unrate"
+        self.logger.info("unrate")
 
         self.__opCurrentSong(ReportType.UNRATE)
 
 
 
     def info(self):
-        print "info"
+        self.logger.info("info")
+        
         if self.current_song_index in range(len(self.play_list)):
                         
             song = self.play_list[self.current_song_index]
@@ -219,7 +227,7 @@ class Player:
         return ""    
 
     def setch(self, ch):
-        print "setch"
+        self.logger.info("setch %d" % ch)
 
         self.channel = ch
 

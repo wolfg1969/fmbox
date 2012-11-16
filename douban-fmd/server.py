@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import logging
 import signal
 import socket
 import sys
@@ -9,10 +10,16 @@ import time
 import SocketServer
 
 from daemon import Daemon
-
 from player import Player
 
+logging.basicConfig(filename="/tmp/douban-fmd.log", level=logging.DEBUG)
+
+server_logger = logging.getLogger('douban-fmd.server')
+
 def shutdown_server_by_cmd(server):
+
+    server_logger.info("server shutdown")
+    
     server.running = False    
     server.player.stop()
     server.shutdown()
@@ -24,7 +31,7 @@ class CmdHandler(SocketServer.StreamRequestHandler):
         # self.request is the TCP socket connected to the client
         self.data = self.rfile.readline().strip()
 
-        print "cmd =", self.data
+        server_logger.debug("cmd=%s" % self.data)
 
         if not self.data:
             return
@@ -36,7 +43,6 @@ class CmdHandler(SocketServer.StreamRequestHandler):
             arg = cmd[1]
 
         cmd = cmd[0]
-
 
         if cmd == "play":
             self.server.player.play()
@@ -63,9 +69,10 @@ class CmdHandler(SocketServer.StreamRequestHandler):
             try:
                 thread.start_new_thread(shutdown_server, (self.server, ))
             except:
-                print "Error: unable to start shutdown thread"
+                log.exception("Error: unable to start shutdown thread")
         else:
-            print "invalid command"
+            server_logger.info("invalid command")
+            
 
 class PlayerSocketServer(SocketServer.TCPServer):
     address_family = socket.AF_INET
@@ -123,6 +130,8 @@ if __name__ == "__main__":
 
     daemon.start()
     ''' 
+    
+    
     
     init_player_server()
     
