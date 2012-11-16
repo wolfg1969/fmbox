@@ -26,95 +26,63 @@ class Player:
         self.play_history = []
         self.current_song_index = -1
 
-        self.mpg321_proc = None
-        self.play_proc = None
+        self.mpg321_pid = None
 
         self.status = PlayerStatus.INIT
         
         self.pid = os.getpid()
         print "main process pid is", self.pid
+        
+        self.inputQueue = multiprocessing.Queue()
+        self.outputQueue = multiprocessing.Queue()
+        
+        self.play_proc = multiprocessing.Process(
+            target=self.__call_mpg321, 
+            name="douban-fmd-player", 
+            args=(self.inputQueue, self.outputQueue, ))
+        
+        self.play_proc.start()
 
 
     def __login(self):
         pass
         
         
-    def __mpg321_proc(self, song_url, output):
+    def __call_mpg321(self, inputQueue, outputQueue):
     
-        mpg321_proc = subprocess.Popen(['mpg321', '-q', song_url.replace('\\', '')])
-        
-        output.put(mpg321_proc)
-        
-        print "mpg321 pid is", mpg321_proc.pid
-        #print "will block here"
-        
-        mpg321_proc.wait() 
-        
-        print "mpg321 stopped" 
-        print "main process pid is", self.pid
-        
-        
-        #os.kill(self.play_proc.pid, signal.SIGKILL)
-        
-        if mpg321_proc.returncode >= 0: # not kill
-            #self.__get_next_song()
-            #self.__play()
-            os.kill(self.pid, signal.SIGUSR1)        
-          
+        while True:
+            song_url, main_pid = inputQueue.get()
     
-    def __playInAnotherProc(self, song_url):        
+            mpg321_proc = subprocess.Popen(['mpg123', '-q', song_url.replace('\\', '')])
         
-        print "play %s in another proc" % song_url
-        
-        queue = multiprocessing.Queue()
-        
-        play_proc = multiprocessing.Process(target=self.__mpg321_proc, args=(song_url, queue))
-        play_proc.start()
-        
-        mpg321_proc = queue.get()
-        
-        queue.close()
-        
-        return mpg321_proc, play_proc
-        
-    
-    
-    def __killPlayProc(self):
-    
-        if self.play_proc:
-            print "current play_proc pid is", self.play_proc.pid
-            self.play_proc.terminate()
-            print "current play_proc pid terminated"
-        else:
-            print "self.play_proc is None" 
-                
-
-    def __play(self):
-    
-        if self.play_proc:
-            print "current play_proc pid is", self.play_proc.pid
-            self.play_proc.terminate()
-            print "current play_proc pid terminated"
-        else:
-            print "self.play_proc is None"
+            outputQueue.put(mpg321_proc.pid)
             
+            print "will block here"
         
-        #self.__killPlayProc()
+            mpg321_proc.wait() 
+        
+            print "mpg321 stopped: returncode =", mpg321_proc.returncode           
+        
+            if mpg321_proc.returncode >= 0: # not kill
+            
+                print "play next"  
+                os.kill(main_pid, signal.SIGUSR1)     
+    
+    
+    def __play(self):                  
         
         if self.current_song_index in range(len(self.play_list)):
 
             song_url = self.play_list[self.current_song_index]['url']
             
-            self.mpg321_proc, self.play_proc = self.__playInAnotherProc(song_url)
-            
-            print "new mpg321_proc.pid =", self.mpg321_proc.pid
-            print "new play_proc is", self.play_proc
+            self.inputQueue.put((song_url, self.pid))
+            self.mpg321_pid = self.outputQueue.get()
             
             
     def __stop(self):
         
-        print "current mpg321 pid is", self.mpg321_proc.pid
-        self.mpg321_proc.send_signal(signal.SIGKILL)
+        print "current mpg321 pid is", self.mpg321_pid
+        os.kill(self.mpg321_pid, signal.SIGKILL)
                     
         print "stop at index:", self.current_song_index        
         
@@ -122,12 +90,13 @@ class Player:
         
     def __pause(self):
     
-        print "current mpg321 pid is", self.mpg321_proc.pid
-        self.mpg321_proc.send_signal(signal.SIGSTOP)        
+        print "current mpg321 pid is", self.mpg321_pid
+        os.kill(self.mpg321_pid, signal.SIGSTOP)        
             
     
     def __get_next_song(self):
     
+        print "__get_next_song: current_song_index =", self.current_song_index
         if self.current_song_index == -1:
 
             self.play_list = self.radioAPI.sendLongReport(
@@ -148,7 +117,10 @@ class Player:
             )
             self.current_song_index = 0
         else:
-            self.current_song_index = self.current_song_index + 1       
+            self.current_song_index = self.current_song_index + 1 
+            
+        print "__get_next_song: new index =", self.current_song_index
+              
     
     def playNextSong(self, signum, frame):
     
@@ -169,7 +141,7 @@ class Player:
             self.__play()
 
         elif self.status == PlayerStatus.PAUSE:
-            self.mpg321_proc.send_signal(signal.SIGCONT)
+            os.kill(self.mpg321_pid, signal.SIGCONT)
 
         self.status = PlayerStatus.PLAY
 

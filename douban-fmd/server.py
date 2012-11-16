@@ -4,16 +4,19 @@ import signal
 import socket
 import sys
 import thread
+import threading
+import time
 import SocketServer
 
 from daemon import Daemon
 
 from player import Player
 
-def shutdown_server(server):
-    player.stop()
+def shutdown_server_by_cmd(server):
+    server.running = False    
+    server.player.stop()
     server.shutdown()
-
+    
 
 class CmdHandler(SocketServer.StreamRequestHandler):
 
@@ -36,26 +39,26 @@ class CmdHandler(SocketServer.StreamRequestHandler):
 
 
         if cmd == "play":
-            player.play()
+            self.server.player.play()
         elif cmd == "stop":
-            player.stop()
+            self.server.player.stop()
         elif cmd == "pause":
-            player.pause()
+            self.server.player.pause()
         elif cmd == "toggle":
-            player.toggle()
+            self.server.player.toggle()
         elif cmd == "skip":
-            player.skip()
+            self.server.player.skip()
         elif cmd == "ban":
-            player.ban()
+            self.server.player.ban()
         elif cmd == "rate":
-            player.rate()
+            self.server.player.rate()
         elif cmd == "unrate":
-            player.unrate()
+            self.server.player.unrate()
         elif cmd == "info":   
-            self.request.sendall(player.info().encode('utf-8'))
+            self.request.sendall(self.server.player.info().encode('utf-8'))
         elif cmd == "setch":
             if arg:
-                player.setch(int(arg))
+                self.server.player.setch(int(arg))
         elif cmd == "end":
             try:
                 thread.start_new_thread(shutdown_server, (self.server, ))
@@ -64,44 +67,12 @@ class CmdHandler(SocketServer.StreamRequestHandler):
         else:
             print "invalid command"
 
-class TCPServerV4(SocketServer.TCPServer):
+class PlayerSocketServer(SocketServer.TCPServer):
     address_family = socket.AF_INET
     allow_reuse_address = True
+    
 
-
-class ServerDaemon(Daemon):
-
-    def run(self):
-
-        HOST, PORT = "localhost", 8888
-
-        # Create the server, binding to localhost on port 8888
-        server = TCPServerV4((HOST, PORT), CmdHandler)
-
-        # Activate the server; this will keep running until you
-        # interrupt the program with Ctrl-C
-        server.serve_forever()
-
-
-if __name__ == "__main__":
-    '''
-    daemon = ServerDaemon('/tmp/doubanfmd.pid')
-
-    if len(sys.argv) == 2:
-        if 'start' == sys.argv[1]:
-            daemon.start()
-        elif 'stop' == sys.argv[1]:
-            daemon.stop()
-        elif 'restart' == sys.argv[1]:
-            daemon.restart()
-        else:
-            print "Unknown command"
-            sys.exit(2)
-        sys.exit(0)
-    else:
-        print "usage: %s start|stop|restart" % sys.argv[0]
-        sys.exit(2)
-    '''
+def init_player_server():
 
     import ConfigParser, os
 
@@ -120,11 +91,42 @@ if __name__ == "__main__":
     HOST, PORT = "localhost", 8888
 
     # Create the server, binding to localhost on port 8888
-    server = TCPServerV4((HOST, PORT), CmdHandler)
+    server = PlayerSocketServer((HOST, PORT), CmdHandler)
+    server.player = player
 
     # Activate the server; this will keep running until you
     # interrupt the program with Ctrl-C
-    server.serve_forever()
+    #server.serve_forever()  
+    
+    server.running = True
+    
+    server_thread = threading.Thread(target=server.serve_forever) 
+    server_thread.start()
+    
+    while server.running:
+        time.sleep(1)
+
+    server_thread.join()
+    
+    
+
+class ServerDaemon(Daemon):
+
+    def run(self):    
+        init_player_server()
+
+
+
+if __name__ == "__main__":
+    '''
+    daemon = ServerDaemon()
+
+    daemon.start()
+    ''' 
+    
+    init_player_server()
+    
+    
 
 
 
