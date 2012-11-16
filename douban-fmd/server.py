@@ -27,9 +27,6 @@ def shutdown_server_by_cmd(server):
 
 class CmdHandler(SocketServer.StreamRequestHandler):
 
-    def __current_playing_info(self):
-        self.request.sendall(self.server.player.info().encode('utf-8'))
-
     def handle(self):
         # self.request is the TCP socket connected to the client
         self.data = self.rfile.readline().strip()
@@ -48,34 +45,50 @@ class CmdHandler(SocketServer.StreamRequestHandler):
         cmd = cmd[0]
 
         if cmd == "play":
-            self.server.player.play()
-            self.__current_playing_info()
+            
+            self.request.sendall(self.server.player.play())
+            
         elif cmd == "stop":
+            
             self.server.player.stop()
+            
         elif cmd == "pause":
-            self.server.player.pause()
+            
+            self.request.sendall(self.server.player.pause())
+            
         elif cmd == "toggle":
-            self.server.player.toggle()
+            
+            self.request.sendall(self.server.player.toggle())
+            
         elif cmd == "skip":
-            self.server.player.skip()
-            self.__current_playing_info()
+            
+            self.request.sendall(self.server.player.skip
+            
         elif cmd == "ban":
-            self.server.player.ban()
-            self.__current_playing_info()
+            
+            self.request.sendall(self.server.player.ban())
+            
+            
         elif cmd == "rate":
-            self.server.player.rate()
-            self.__current_playing_info()
+            
+            self.request.sendall(self.server.player.rate())
+            
         elif cmd == "unrate":
-            self.server.player.unrate()
-            self.__current_playing_info()
+            
+            self.request.sendall(self.server.player.unrate())
+            
         elif cmd == "info":   
-            self.__current_playing_info()
+            
+            self.request.sendall(self.server.player.info())
+            
         elif cmd == "setch":
-            if arg:
-                self.server.player.setch(int(arg))
-                self.__current_playing_info()
+            
+            if arg:                
+                self.request.sendall(self.server.player.setch(int(arg)))                
+                
             else:
-                self.request.sendall("invalid channel id")    
+                self.request.sendall("invalid channel id")  
+                  
         elif cmd == "end":
             try:
                 thread.start_new_thread(shutdown_server, (self.server, ))

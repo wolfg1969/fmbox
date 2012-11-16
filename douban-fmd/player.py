@@ -71,7 +71,6 @@ class Player:
                mpg321_proc.returncode != signal.SIGCONT : # not stop or pause
             
                 self.logger.info("play next song")
-                self.logger.debug("pre send SIGUSR1 to %d" % main_pid)
                 os.kill(main_pid, signal.SIGUSR1) 
                 self.logger.debug("send SIGUSR1 to %d" % main_pid)    
     
@@ -161,6 +160,9 @@ class Player:
             os.kill(self.mpg321_pid, signal.SIGCONT)
 
         self.status = PlayerStatus.PLAY
+        
+        return self.__current_song_info()
+        
 
     def stop(self):
         self.logger.info("stop")
@@ -195,6 +197,8 @@ class Player:
         self.__stop()
         self.__get_next_song()
         self.__play()
+        
+        return self.__current_song_info()
 
 
 
@@ -206,36 +210,33 @@ class Player:
         self.__stop()
         self.__get_next_song()
         self.__play()
+        
+        return self.__current_song_info()
 
 
     def rate(self):
         self.logger.info("rate")
 
         self.__opCurrentSong(ReportType.RATE)
+        
+        return self.__current_song_info()
 
 
     def unrate(self):
         self.logger.info("unrate")
 
         self.__opCurrentSong(ReportType.UNRATE)
+        
+        return self.__current_song_info()
 
 
 
     def info(self):
         self.logger.info("info")
         
-        if self.current_song_index in range(len(self.play_list)):
-                        
-            song = self.play_list[self.current_song_index]
-                        
-            return u"Album: %s\nTitle: %s\nArtist: %s\nLike:%s\n" % (
-                song['albumtitle'],
-                song['title'],
-                song['artist'],
-                song['like'],
-            )
+        return self.__current_song_info()
         
-        return ""    
+           
 
     def setch(self, ch):
         self.logger.info("setch %d" % ch)
@@ -250,6 +251,24 @@ class Player:
 
         self.play()
         
+        return self.__current_song_info()
+    
+    def __current_song_info(self):
+		
+		if self.current_song_index in range(len(self.play_list)):
+                        
+            song = self.play_list[self.current_song_index]
+                        
+            return u"Album: %s\nTitle: %s\nArtist: %s\nLike:%s\n" % (
+                song['albumtitle'],
+                song['title'],
+                song['artist'],
+                song['like'],
+            ).encode('utf-8')
+        
+        return "" 
+        
+		    
 
     def __maintainPlayHistory(self, songId, op):
 
