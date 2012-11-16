@@ -66,7 +66,8 @@ class Player:
         
             self.logger.debug("mpg321 stopped: returncode=%d" % mpg321_proc.returncode)            
         
-            if mpg321_proc.returncode >= 0: # not kill
+            if mpg321_proc.returncode != signal.SIGSTOP and \
+               mpg321_proc.returncode != signal.SIGCONT : # not stop or pause
             
                 self.logger.info("play next song")
                 os.kill(main_pid, signal.SIGUSR1)     
@@ -105,6 +106,8 @@ class Player:
         
         if self.current_song_index == -1:
 
+            self.logger.debug("no playlist, request new")
+            
             self.play_list = self.radioAPI.sendLongReport(
                 self.channel,
                 0,
@@ -115,6 +118,8 @@ class Player:
 
         elif self.current_song_index >= len(self.play_list):
 
+            self.logger.debug("playlist end, request new")
+            
             self.play_list = self.radioAPI.sendLongReport(
                 self.channel,
                 self.play_list[-2:-1][0]['sid'],
@@ -123,6 +128,8 @@ class Player:
             )
             self.current_song_index = 0
         else:
+            
+            self.logger.debug("playlist playing, no need to request")
             self.current_song_index = self.current_song_index + 1 
             
         self.logger.debug("__get_next_song: new index = %d" % self.current_song_index)

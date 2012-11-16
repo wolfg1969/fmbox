@@ -27,6 +27,9 @@ def shutdown_server_by_cmd(server):
 
 class CmdHandler(SocketServer.StreamRequestHandler):
 
+    def __current_playing_info(self):
+        self.request.sendall(self.server.player.info().encode('utf-8'))
+
     def handle(self):
         # self.request is the TCP socket connected to the client
         self.data = self.rfile.readline().strip()
@@ -46,6 +49,7 @@ class CmdHandler(SocketServer.StreamRequestHandler):
 
         if cmd == "play":
             self.server.player.play()
+            self.__current_playing_info()
         elif cmd == "stop":
             self.server.player.stop()
         elif cmd == "pause":
@@ -54,17 +58,24 @@ class CmdHandler(SocketServer.StreamRequestHandler):
             self.server.player.toggle()
         elif cmd == "skip":
             self.server.player.skip()
+            self.__current_playing_info()
         elif cmd == "ban":
             self.server.player.ban()
+            self.__current_playing_info()
         elif cmd == "rate":
             self.server.player.rate()
+            self.__current_playing_info()
         elif cmd == "unrate":
             self.server.player.unrate()
+            self.__current_playing_info()
         elif cmd == "info":   
-            self.request.sendall(self.server.player.info().encode('utf-8'))
+            self.__current_playing_info()
         elif cmd == "setch":
             if arg:
                 self.server.player.setch(int(arg))
+                self.__current_playing_info()
+            else:
+                self.request.sendall("invalid channel id")    
         elif cmd == "end":
             try:
                 thread.start_new_thread(shutdown_server, (self.server, ))
@@ -125,15 +136,13 @@ class ServerDaemon(Daemon):
 
 
 if __name__ == "__main__":
-    '''
-    daemon = ServerDaemon()
+    
+    daemon = ServerDaemon("/tmp/douban-fmd.pid")
 
-    daemon.start()
-    ''' 
+    daemon.start()   
     
     
-    
-    init_player_server()
+    #init_player_server()
     
     
 
