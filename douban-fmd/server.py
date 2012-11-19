@@ -127,10 +127,10 @@ def init_player_server():
     server_thread = threading.Thread(target=server.serve_forever)
     server_thread.start()
 
-    #while server.running:
-    #    time.sleep(1)
+    while server.running:
+        time.sleep(1)
     
-    #server_thread.join()
+    server_thread.join()
 
 
 
