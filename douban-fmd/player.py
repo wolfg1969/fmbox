@@ -254,21 +254,22 @@ class Player:
         return self.__current_song_info()
     
     def __current_song_info(self):
-		
-		if self.current_song_index in range(len(self.play_list)):
+        
+        if self.current_song_index in range(len(self.play_list)):
                         
             song = self.play_list[self.current_song_index]
                         
-            return u"Album: %s\nTitle: %s\nArtist: %s\nLike:%s\n" % (
-                song['albumtitle'],
-                song['title'],
-                song['artist'],
-                song['like'],
+            return (u"Album: %s\nTitle: %s\nArtist: %s\nLike:%s\n" % (
+                    song['albumtitle'], 
+                    song['title'], 
+                    song['artist'], 
+                    song['like'],
+                )
             ).encode('utf-8')
-        
+            
         return "" 
         
-		    
+            
 
     def __maintainPlayHistory(self, songId, op):
 

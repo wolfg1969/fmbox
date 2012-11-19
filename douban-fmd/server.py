@@ -19,11 +19,11 @@ server_logger = logging.getLogger('douban-fmd.server')
 def shutdown_server_by_cmd(server):
 
     server_logger.info("server shutdown")
-    
-    server.running = False    
+
+    server.running = False
     server.player.stop()
     server.shutdown()
-    
+
 
 class CmdHandler(SocketServer.StreamRequestHandler):
 
@@ -45,50 +45,50 @@ class CmdHandler(SocketServer.StreamRequestHandler):
         cmd = cmd[0]
 
         if cmd == "play":
-            
+
             self.request.sendall(self.server.player.play())
-            
+
         elif cmd == "stop":
-            
+
             self.server.player.stop()
-            
+
         elif cmd == "pause":
-            
+
             self.request.sendall(self.server.player.pause())
-            
+
         elif cmd == "toggle":
-            
+
             self.request.sendall(self.server.player.toggle())
-            
+
         elif cmd == "skip":
-            
-            self.request.sendall(self.server.player.skip
-            
+
+            self.request.sendall(self.server.player.skip())
+
         elif cmd == "ban":
-            
+
             self.request.sendall(self.server.player.ban())
-            
-            
+
+
         elif cmd == "rate":
-            
+
             self.request.sendall(self.server.player.rate())
-            
+
         elif cmd == "unrate":
-            
+
             self.request.sendall(self.server.player.unrate())
-            
-        elif cmd == "info":   
-            
+
+        elif cmd == "info":
+
             self.request.sendall(self.server.player.info())
-            
+
         elif cmd == "setch":
-            
-            if arg:                
-                self.request.sendall(self.server.player.setch(int(arg)))                
-                
+
+            if arg:
+                self.request.sendall(self.server.player.setch(int(arg)))
+
             else:
-                self.request.sendall("invalid channel id")  
-                  
+                self.request.sendall("invalid channel id")
+
         elif cmd == "end":
             try:
                 thread.start_new_thread(shutdown_server, (self.server, ))
@@ -96,12 +96,12 @@ class CmdHandler(SocketServer.StreamRequestHandler):
                 log.exception("Error: unable to start shutdown thread")
         else:
             server_logger.info("invalid command")
-            
+
 
 class PlayerSocketServer(SocketServer.TCPServer):
     address_family = socket.AF_INET
     allow_reuse_address = True
-    
+
 
 def init_player_server():
 
@@ -116,7 +116,7 @@ def init_player_server():
         config.get("DoubanFM", "token"),
         long(config.get("DoubanFM", "expire"))
     )
-    
+
     signal.signal(signal.SIGUSR1, player.playNextSong)
 
     HOST, PORT = "localhost", 8888
@@ -127,37 +127,37 @@ def init_player_server():
 
     # Activate the server; this will keep running until you
     # interrupt the program with Ctrl-C
-    #server.serve_forever()  
-    
+    #server.serve_forever()
+
     server.running = True
-    
-    server_thread = threading.Thread(target=server.serve_forever) 
+
+    server_thread = threading.Thread(target=server.serve_forever)
     server_thread.start()
-    
+
     while server.running:
         time.sleep(1)
 
     server_thread.join()
-    
-    
+
+
 
 class ServerDaemon(Daemon):
 
-    def run(self):    
+    def run(self):
         init_player_server()
 
 
 
 if __name__ == "__main__":
-    
+
     daemon = ServerDaemon("/tmp/douban-fmd.pid")
 
-    daemon.start()   
-    
-    
+    daemon.start()
+
+
     #init_player_server()
-    
-    
+
+
 
 
 
