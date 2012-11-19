@@ -46,6 +46,8 @@ class Player:
         
         self.play_proc.start()
 
+    def close(self):
+        self.play_proc.terminate()
 
     def __login(self):
         pass
@@ -67,8 +69,7 @@ class Player:
         
             self.logger.debug("mpg321 stopped: returncode=%d" % mpg321_proc.returncode)            
         
-            if mpg321_proc.returncode != signal.SIGSTOP and \
-               mpg321_proc.returncode != signal.SIGCONT : # not stop or pause
+            if mpg321_proc.returncode != -signal.SIGKILL: # not stop
             
                 self.logger.info("play next song")
                 os.kill(main_pid, signal.SIGUSR1) 
@@ -167,10 +168,12 @@ class Player:
     def stop(self):
         self.logger.info("stop")
 
-        if self.status != PlayerStatus.STOP:            
-
+        if self.status == PlayerStatus.PLAY or self.status == PlayerStatus.PAUSE:            
+            
             self.__stop()
             self.status = PlayerStatus.STOP
+            
+        
 
 
     def pause(self):
@@ -247,9 +250,11 @@ class Player:
         del self.play_list[:]
 
         if self.status != PlayerStatus.STOP:
-            self.stop()
+            self.__stop()
 
-        self.play()
+        
+        self.__get_next_song()
+        self.__play()
         
         return self.__current_song_info()
     

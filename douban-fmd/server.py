@@ -16,13 +16,6 @@ logging.basicConfig(filename="/tmp/douban-fmd.log", level=logging.DEBUG)
 
 server_logger = logging.getLogger('douban-fmd.server')
 
-def shutdown_server_by_cmd(server):
-
-    server_logger.info("server shutdown")
-
-    server.running = False
-    server.player.stop()
-    server.shutdown()
 
 
 class CmdHandler(SocketServer.StreamRequestHandler):
@@ -89,11 +82,11 @@ class CmdHandler(SocketServer.StreamRequestHandler):
             else:
                 self.request.sendall("invalid channel id")
 
-        elif cmd == "end":
-            try:
-                thread.start_new_thread(shutdown_server, (self.server, ))
-            except:
-                log.exception("Error: unable to start shutdown thread")
+        #elif cmd == "end":
+        #    self.server.player.stop()
+        #    self.server.player.close()
+        #    self.server.running = False
+            
         else:
             server_logger.info("invalid command")
 
@@ -134,10 +127,10 @@ def init_player_server():
     server_thread = threading.Thread(target=server.serve_forever)
     server_thread.start()
 
-    while server.running:
-        time.sleep(1)
-
-    server_thread.join()
+    #while server.running:
+    #    time.sleep(1)
+    
+    #server_thread.join()
 
 
 
@@ -151,11 +144,7 @@ class ServerDaemon(Daemon):
 if __name__ == "__main__":
 
     daemon = ServerDaemon("/tmp/douban-fmd.pid")
-
     daemon.start()
-
-
-    #init_player_server()
 
 
 
