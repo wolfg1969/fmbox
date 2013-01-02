@@ -37,9 +37,9 @@ class RadioAPI:
         self.curl.setopt(pycurl.USERAGENT,
             'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20100101 Firefox/8.0')
         self.curl.setopt(pycurl.ENCODING, "utf-8")
-        self.curl.setopt(pycurl.CONNECTTIMEOUT, 5)
-        self.curl.setopt(pycurl.TIMEOUT, 5)
-        #self.curl.setopt(pycurl.VERBOSE, True)
+        self.curl.setopt(pycurl.CONNECTTIMEOUT, 30)
+        self.curl.setopt(pycurl.TIMEOUT, 30)
+        self.curl.setopt(pycurl.VERBOSE, True)
 
 
     def sendLongReport(self, channel, songId, reportType, playHistory):

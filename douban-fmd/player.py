@@ -72,8 +72,11 @@ class Player:
             if mpg321_proc.returncode != -signal.SIGKILL: # not stop
             
                 self.logger.info("play next song")
-                os.kill(main_pid, signal.SIGUSR1) 
-                self.logger.debug("send SIGUSR1 to %d" % main_pid)    
+                try:
+                    os.kill(main_pid, signal.SIGUSR1) 
+                    self.logger.debug("send SIGUSR1 to %d" % main_pid)  
+                except OSError:
+                    pass  
     
     
     def __play(self):                  
@@ -85,12 +88,18 @@ class Player:
             self.inputQueue.put((song_url, self.pid))
             self.mpg321_pid = self.outputQueue.get()
             
+        else:
+            self.logger.debug("invalid song index %d" % self.current_song_index)        
+            
             
     def __stop(self):
         
         self.logger.debug("current mpg321 pid is %d" % self.mpg321_pid)
         
-        os.kill(self.mpg321_pid, signal.SIGKILL)
+        try:
+            os.kill(self.mpg321_pid, signal.SIGKILL)
+        except OSError:
+            self.logger.debug("failed to kill mpg123 process, signal %d" % signal.SIGKILL)        
                     
         self.logger.debug("stop at index: %d" % self.current_song_index)        
         
@@ -100,7 +109,10 @@ class Player:
     
         self.logger.debug("current mpg321 pid is %d" % self.mpg321_pid)
         
-        os.kill(self.mpg321_pid, signal.SIGSTOP)        
+        try:
+            os.kill(self.mpg321_pid, signal.SIGSTOP)  
+        except OSError:
+            self.logger.debug("failed to kill mpg123 process, signal: %d" % signal.SIGSTOP)          
             
     
     def __get_next_song(self):
@@ -158,7 +170,10 @@ class Player:
             self.__play()
 
         elif self.status == PlayerStatus.PAUSE:
-            os.kill(self.mpg321_pid, signal.SIGCONT)
+            try:
+                os.kill(self.mpg321_pid, signal.SIGCONT)
+            except OSError:
+                pass
 
         self.status = PlayerStatus.PLAY
         
